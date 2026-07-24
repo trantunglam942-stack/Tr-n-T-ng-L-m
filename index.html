@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cổng Game Tài Xỉu mcoin Online</title>
+    <!-- Tích hợp thư viện dịch vụ lưu trữ và truyền tải dữ liệu đám mây của Google Firebase -->
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background: #121214; color: #fff; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .box { width: 100%; max-width: 400px; background: #202024; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #323238; }
+        .hidden { display: none !important; }
+        
+        /* Form Đăng nhập & Đăng ký */
+        .auth-title { text-align: center; margin-bottom: 15px; font-size: 1.4rem; color: #00b37e; font-weight: bold; }
+        .auth-box button { width: 100%; margin-top: 10px; padding: 12px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; }
+        .btn-login { background: #00b37e; color: #fff; }
+        .btn-register { background: #29292e; color: #fff; border: 1px solid #323238; }
+        
+        /* Bàn cược Tài Xỉu */
+        .balance { color: #00b37e; font-weight: bold; font-size: 1.2rem; text-align: center; margin-top: 5px; }
+        .user-welcome { text-align: center; margin-bottom: 10px; font-size: 0.9rem; color: #aaa; }
+        .dice-zone { display: flex; justify-content: center; gap: 15px; margin: 15px 0; }
+        .dice { width: 50px; height: 50px; background: #fff; color: #000; font-size: 1.8rem; font-weight: bold; display: flex; justify-content: center; align-items: center; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .bet-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .btn-bet { background: #29292e; border: 2px solid transparent; color: #fff; padding: 15px; font-size: 1.2rem; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .btn-bet.active { border-color: #00b37e; background: #1c352d; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        input { flex: 1; padding: 12px; background: #121214; border: 1px solid #323238; color: #fff; border-radius: 6px; font-size: 1rem; }
+        button.action { background: #00b37e; color: #fff; border: none; padding: 12px 20px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        
+        /* Giao diện khung Chat Online */
+        .chat-area { height: 260px; overflow-y: auto; background: #121214; padding: 10px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #323238; display: flex; flex-direction: column; gap: 8px; }
+        .msg { background: #29292e; padding: 7px 11px; border-radius: 6px; font-size: 0.9rem; width: fit-content; max-width: 90%; word-break: break-all; }
+        .msg .name { color: #00b37e; font-weight: bold; margin-bottom: 2px; font-size: 0.8rem; }
+        .msg.system { background: #2a1f1d; border-left: 3px solid #fba94c; width: 100%; max-width: 100%; }
+        .msg.system .name { color: #fba94c; }
+    </style>
+</head>
+<body>
+
+    <!-- MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ -->
+    <div class="box auth-box" id="auth-panel">
+        <h2 class="auth-title">CỔNG GAME TÀI XỈU</h2>
+        <div class="input-group">
+            <input type="text" id="auth-user" placeholder="Tên tài khoản...">
+        </div>
+        <div class="input-group">
+            <input type="password" id="auth-pass" placeholder="Mật khẩu...">
+        </div>
+        <button class="btn-login" onclick="login()">ĐĂNG NHẬP</button>
+        <button class="btn-register" onclick="register()">ĐĂNG KÝ MỚI</button>
+    </div>
+
+    <!-- MÀN HÌNH CHƠI GAME TÀI XỈU -->
+    <div class="box hidden" id="game-panel">
+        <div class="user-welcome">Tài khoản: <span id="display-username" style="color:#00b37e; font-weight:bold;">...</span></div>
+        <div class="balance">Số dư: <span id="my-mcoin">0</span> mcoin</div>
+        <div class="dice-zone">
+            <div class="dice" id="d1">?</div>
+            <div class="dice" id="d2">?</div>
+            <div class="dice" id="d3">?</div>
+        </div>
+        <p style="text-align:center; color:#fba94c; font-weight:bold; margin-bottom:15px;" id="game-status">Chọn cửa và nhập mcoin để cược!</p>
+        
+        <div class="bet-buttons">
+            <button class="btn-bet" id="b-tai" onclick="choose('TÀI')">TÀI</button>
+            <button class="btn-bet" id="b-xiu" onclick="choose('XỈU')">XỈU</button>
+        </div>
+        <div class="input-group">
+            <input type="number" id="coin-value" placeholder="Số mcoin cược...">
+            <button class="action" onclick="playGame()">LẮC</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH PHÒNG CHAT ĐỒNG BỘ ONLINE -->
+    <div class="box hidden" id="chat-panel">
+        <h3 style="margin-bottom: 10px; font-size: 1rem;">💬 Phòng Chat Server</h3>
+        <div class="chat-area" id="box-chat"></div>
+        <div class="input-group">
+            <input type="text" id="text-chat" placeholder="Nhập tin nhắn hoặc lệnh (.mcoin, .gm...)" onkeypress="if(event.key==='Enter')sendChat()">
+            <button class="action" onclick="sendChat()">Gửi</button>
+        </div>
+    </div>
+
+<script>
+    // 1. Cấu hình kết nối trực tiếp đến Database Firebase của bạn
+    const firebaseConfig = {
+        databaseURL: "https://firebasedatabase.app"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Các biến quản lý thông tin tài khoản phiên chơi hiện tại
+    let currentSessionUser = null;
+    let selectedSide = null;
+
+    // Thiết lập các thông số hệ thống theo yêu cầu
+    const START_MCOIN = 50000000;              // 50,000,000 mcoin cho người mới
+    const ADMIN_USER = "TrTLam";                // Tên tài khoản Admin
+    const ADMIN_PASS = "zf903eqhk2109";         // Mật khẩu Admin
+    const ADMIN_MCOIN = 100000000000000;        // 100,000,000,000,000 mcoin cho Admin
+
+    // --- XỬ LÝ ĐĂNG KÝ VÀ ĐĂNG NHẬP ---
+    function register() {
+        let username = document.getElementById('auth-user').value.trim();
+        let password = document.getElementById('auth-pass').value.trim();
+
+        if (username === "" || password === "") { alert("Vui lòng điền đủ tài khoản và mật khẩu!"); return; }
+        if (username === ADMIN_USER) { alert("Tài khoản hệ thống này đã được bảo vệ!"); return; }
+
+        // Kiểm tra xem trùng tên tài khoản trên cơ sở dữ liệu chưa
+        db.ref("users/" + username).once("value", function(snapshot) {
+            if (snapshot.exists()) {
+                alert("Tên tài khoản này đã có người đăng ký!");
+            } else {
+                // Tạo mới tài khoản thường với số mcoin khởi đầu 50 Triệu
+                db.ref("users/" + username).set({
+                    password: password,
+                    mcoin: START_MCOIN
+                }).then(() => {
+                    alert("Đăng ký tài khoản thành công! Bây giờ hãy bấm Đăng nhập.");
+                });
+            }
+        });
+    }
+
+    function login() {
+        let username = document.getElementById('auth-user').value.trim();
+        let password = document.getElementById('auth-pass').value.trim();
+
+        if (username === "" || password === "") { alert("Vui lòng điền đủ tài khoản và mật khẩu!"); return; }
+
+        // Kiểm tra thông tin đăng nhập đúng cấu hình quyền Admin hay không
+        if (username === ADMIN_USER && password === ADMIN_PASS) {
+            currentSessionUser = username;
+            // Ép số dư tài khoản Admin lên 100 Nghìn tỷ mcoin trên Database
+            db.ref("users/" + ADMIN_USER).set({
+                password: ADMIN_PASS,
+                mcoin: ADMIN_MCOIN
+            }).then(() => {
+                enterGame(username);
+            });
+            return;
+        }
+
+        // Kiểm tra thông tin người dùng thường trên Database đám mây
+        db.ref("users/" + username).once("value", function(snapshot) {
+            if (snapshot.exists()) {
+                let userData = snapshot.val();
+                if (userData.password === password) {
+                    currentSessionUser = username;
+                    enterGame(username);
+                } else {
+                    alert("Mật khẩu không chính xác!");
+                }
+            } else {
+                alert("Tài khoản này không tồn tại! Hãy nhấn Đăng ký.");
+            }
+        });
+    }
+
+    function enterGame(username) {
+        // Chuyển đổi giao diện hiển thị từ Đăng nhập sang giao diện Chơi game
+        document.getElementById('auth-panel').classList.add('hidden');
+        document.getElementById('game-panel').classList.remove('hidden');
+        document.getElementById('chat-panel').classList.remove('hidden');
+        document.getElementById('display-username').innerText = username;
+
+        // Đồng bộ số dư mcoin hiển thị theo thời gian thực từ Database về màn hình
+        db.ref("users/" + username + "/mcoin").on("value", function(snapshot) {
+            let coin = snapshot.val();
+            if(coin !== null) {
+                document.getElementById('my-mcoin').innerText = coin.toLocaleString();
+            }
+        });
+
+        // Bật kết nối phòng chat trực tuyến toàn Server
+        listenOnlineChat();
+    }
+
+    // --- LOGIC VẬN HÀNH GAME TÀI XỈU ---
+    function choose(side) {
+        selectedSide = side;
+        document.getElementById('b-tai').classList.remove('active');
+        document.getElementById('b-xiu').classList.remove('active');
+        if(side === 'TÀI') document.getElementById('b-tai').classList.add('active');
+        if(side === 'XỈU') document.getElementById('b-xiu').classList.add('active');
+    }
+
+    function playGame() {
